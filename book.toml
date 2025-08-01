@@ -1,0 +1,5 @@
+[book]
+authors = ["qsliu2017"]
+language = "en"
+src = "src"
+title = "Dive into Postgres"
