@@ -4,6 +4,8 @@
 
 # Data Management: Storage & Indexes
 
+- [Heap Access](./heap-access.md)
+
 # Transactions & Concurrency Control
 
 # Query Execution & Optimization
