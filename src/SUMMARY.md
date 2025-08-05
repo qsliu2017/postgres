@@ -1,14 +1,14 @@
 # Summary
 
-# Setup
+- [Setup](./setup.md)
 
-- [Development Environment](./setup.md)
+# Data Management: Storage & Indexes
 
-# Storage Management
+# Transactions & Concurrency Control
 
-# Transcation
+# Query Execution & Optimization
 
-# Plugins
+# Extensions
 
 - [`pgvector`]()
 - [`pg_duckdb`]()
