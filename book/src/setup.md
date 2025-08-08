@@ -8,9 +8,18 @@ cd postgres
 
 ./configure \
   --prefix=$(pwd)/.install \
-  --enable-debug
+  --enable-debug \
+  --enable-cassert \
+  --without-icu
 bear - make
 make install
+export PATH=$(pwd)/.install/bin:$PATH
+```
+
+## Initial database cluster
+
+```sh
+initdb -D .data
 ```
 
 ## Configure Clangd
@@ -22,8 +31,32 @@ make install
 {{#include ../../.clangd}}
 ```
 
-## Configure `.vscode/launch.json`
+## Debug
+
+### Configure `.vscode/launch.json`
 
 ```json
 {{#include ../../.vscode/launch.json}}
 ```
+
+### Debug PostMaster
+
+### Debug Worker
+
+```sh
+pg_ctl -D .data -l .data/logfile start
+psql postgres
+```
+
+Then check which process is serving this session.
+
+```sql
+postgres=# select pg_backend_pid();
+ pg_backend_pid 
+----------------
+          59407
+(1 row)
+
+```
+
+Attach to this pid.
