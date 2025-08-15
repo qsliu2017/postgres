@@ -6,8 +6,8 @@
 # Data Management: Storage & Access
 
 - [Heap Access](./heap-access.md)
+- [Catalog](./catalog.md)
 - [Indexes Access]()
-- [Catalog]()
 
 # Transactions & Concurrency Control
 
