@@ -1,0 +1,5 @@
+.PHONY: sync
+
+sync:
+	josh-filter ':/book' refs/heads/book --update refs/heads/main
+	git push origin refs/heads/book refs/heads/main

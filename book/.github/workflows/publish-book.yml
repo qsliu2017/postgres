@@ -2,8 +2,11 @@ name: Publish mdBook
 
 on:
   push:
-    branches: [book]
-    paths: ["book/**"]
+    branches: [main]
+    paths:
+      - "book.toml"
+      - "src/**"
+      - ".github/workflows/publish-book.yml"
   workflow_dispatch:
 
 jobs:
@@ -17,11 +20,11 @@ jobs:
         with:
           mdbook-version: "latest"
 
-      - run: mdbook build book
+      - run: mdbook build .
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: book/book
+          path: book
 
   deploy:
     needs: build
