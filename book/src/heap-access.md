@@ -208,21 +208,44 @@ In this chapter, we focus on storage layer, which is the top 3 frames.
 `table_tuple_insert` wraps call to relation's table access method (`tableam`). By this way, PostgreSQL can support different table access methods, such as heap, hash, and B-tree. See [Table Access Method Interface Definition](https://www.postgresql.org/docs/17/tableam.html).
 
 ```c
-{{#include ../../src/include/access/tableam.h:1402:1408}}
+static inline void
+table_tuple_insert(Relation rel, TupleTableSlot *slot, CommandId cid,
+                   int options, struct BulkInsertStateData *bistate)
+{
+    rel->rd_tableam->tuple_insert(rel, slot, cid, options,
+                                  bistate);
+}
 ```
 
 ```c
-{{#include ../../src/backend/access/heap/heapam_handler.c:2592}}
+static const TableAmRoutine heapam_methods = {
     /* ... */
-{{#include ../../src/backend/access/heap/heapam_handler.c:2614}}
+    .tuple_insert = heapam_tuple_insert,
     /* ... */
-{{#include ../../src/backend/access/heap/heapam_handler.c:2649}}
+};
 ```
 
 `heapam_tuple_insert` do the preparation and cleanup around the insertion.
 
 ```c
-{{#include ../../src/backend/access/heap/heapam_handler.c:241:258}}
+static void
+heapam_tuple_insert(Relation relation, TupleTableSlot *slot, CommandId cid,
+                    int options, BulkInsertState bistate)
+{
+    bool        shouldFree = true;
+    HeapTuple   tuple = ExecFetchSlotHeapTuple(slot, true, &shouldFree);
+
+    /* Update the tuple with table oid */
+    slot->tts_tableOid = RelationGetRelid(relation);
+    tuple->t_tableOid = slot->tts_tableOid;
+
+    /* Perform the insertion, and copy the resulting ItemPointer */
+    heap_insert(relation, tuple, cid, options, bistate);
+    ItemPointerCopy(&tuple->t_self, &slot->tts_tid);
+
+    if (shouldFree)
+        pfree(tuple);
+}
 ```
 
 `heap_insert` is the dirty work of the insertion. Since it has ~200 LoC (`src/backend/access/heap/heapam.c:2004-2185`), the whole function is not shown here for saving network traffic :). We pick the most important part of the function here.
@@ -230,37 +253,54 @@ In this chapter, we focus on storage layer, which is the top 3 frames.
 1. prepares the tuple for insertion. We would go back to TOAST later.
 
     ```c
-{{#include ../../src/backend/access/heap/heapam.c:2018:2024}}
+    /*
+     * Fill in tuple header fields and toast the tuple if necessary.
+     *
+     * Note: below this point, heaptup is the data we actually intend to store
+     * into the relation; tup is the caller's original untoasted data.
+     */
+    heaptup = heap_prepare_insert(relation, tup, xid, cid, options);
     ```
 
 2. finds the buffer to insert the tuple into.
 
     ```c
-{{#include ../../src/backend/access/heap/heapam.c:2026:2033}}
+    /*
+     * Find buffer to insert this tuple into.  If the page is all visible,
+     * this will also pin the requisite visibility map page.
+     */
+    buffer = RelationGetBufferForTuple(relation, heaptup->t_len,
+                                       InvalidBuffer, options, bistate,
+                                       &vmbuffer, NULL,
+                                       0);
     ```
 
 3. puts the tuple into the buffer.
 
     ```c
-{{#include ../../src/backend/access/heap/heapam.c:2055:2056}}
+    RelationPutHeapTuple(relation, buffer, heaptup,
+                         (options & HEAP_INSERT_SPECULATIVE) != 0);
     ```
 
 4. marks the buffer as modified so that the buffer would be flushed to disk by background worker.
 
     ```c
-{{#include ../../src/backend/access/heap/heapam.c:2078}}
+    MarkBufferDirty(buffer);
     ```
 
 5. WAL part, skip for now.
 
     ```c
-{{#include ../../src/backend/access/heap/heapam.c:2080:2081}}
+    /* XLOG stuff */
+    if (RelationNeedsWAL(relation))
     ```
 
 6. release the buffer.
 
     ```c
-{{#include ../../src/backend/access/heap/heapam.c:2161:2163}}
+    UnlockReleaseBuffer(buffer);
+    if (vmbuffer != InvalidBuffer)
+        ReleaseBuffer(vmbuffer);
     ```
 
 [[TODO]]

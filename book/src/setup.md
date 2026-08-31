@@ -28,7 +28,11 @@ initdb -D .data
 
 `.clangd`: 
 ```yaml
-{{#include ../../.clangd}}
+If:
+  PathMatch: .*\.h$
+CompileFlags:
+  Add:
+    - -include postgres.h
 ```
 
 ## Debug
@@ -36,7 +40,43 @@ initdb -D .data
 ### Configure `.vscode/launch.json`
 
 ```json
-{{#include ../../.vscode/launch.json}}
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug PostgreSQL Backend",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/.install/bin/postgres",
+            "args": [
+                "-D", "${workspaceFolder}/.data",
+                "-p", "5432",
+                "-c", "log_statement=all",
+                "-c", "log_min_messages=debug1"
+            ],
+            "cwd": "${workspaceFolder}",
+            "environment": [
+                {
+                    "name": "PGDATA",
+                    "value": "${workspaceFolder}/.data"
+                },
+                {
+                    "name": "PATH",
+                    "value": "${workspaceFolder}/.install/bin:${env:PATH}"
+                }
+            ],
+            "MIMode": "lldb"
+        },
+        {
+            "name": "Attach to PostgreSQL Backend",
+            "type": "cppdbg",
+            "request": "attach",
+            "program": "${workspaceFolder}/.install/bin/postgres",
+            "processId": "${command:pickProcess}",
+            "MIMode": "lldb"
+        }
+    ]
+}
 ```
 
 ### Debug PostMaster
