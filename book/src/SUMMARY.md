@@ -7,6 +7,7 @@
 
 - [Heap Access](./heap-access.md)
 - [Catalog](./catalog.md)
+- [Partition Tables](./partition-tables.md)
 - [Indexes Access]()
 
 # Transactions & Concurrency Control
