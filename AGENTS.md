@@ -23,3 +23,20 @@
   ```
 
 - Do not put source line numbers in snippet location comments. Line numbers change across PostgreSQL versions.
+
+- Include the enclosing function signature and braces when a source snippet excerpts a function body.
+
+- Prefer active voice: write “`function()` performs the operation,” not “the operation is performed in `function()`.”
+
+- Format call paths as top-down call trees containing only the important, critical paths. Start with the entry point. Keep a linear dispatch chain on one line, separated by `->`. Indent branches beneath their caller, and keep sibling or alternative branches at the same indentation. A call may include a brief comment or condition. Use function names only; do not append source locations or line numbers.
+
+  ````md
+  ```text
+  entry -> dispatcher -> caller
+    -> parallel caller
+    -> conditional caller, when a condition is true
+      -> sub caller
+  ```
+  ````
+
+- Structure a code walkthrough as: section heading, optional SQL example, visible call-path graph, then collapsible source-code descriptions. Do not include debugger setup such as attaching to a backend or setting breakpoints. Follow the graph's order in the walkthrough and merge methods from the same graph line into one source block. Put a description that applies to one graph line in that block's `<summary>`; put descriptions that span multiple graph lines in visible prose outside the blocks.
